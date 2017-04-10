@@ -1,5 +1,6 @@
 .DS_Store
 led / optimized / DLL files
+# Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
 *$py.class
@@ -69,6 +70,7 @@ docs/_build/
 target/
 
 # Jupyter Notebook
+# IPython Notebook
 .ipynb_checkpoints
 
 # pyenv
