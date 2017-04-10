@@ -36,13 +36,8 @@ import numpy as np
 from scipy import misc
 import tensorflow as tf
 
-import facenet
-from align import detect_face
 
-import facenet
-import align.detect_face
-import align
-
+from facenet.align import  align_model, detect_face
 
 def read_image(image_path):
     return misc.imread(image_path)
@@ -59,12 +54,13 @@ def draw_text(frame, text, x, y, color=(0,255,0), thickness=1, size=1):
             frame, text, (int(x), int(y)), cv2.FONT_HERSHEY_SIMPLEX, size, color, thickness)
 
 
-def align_image(image_path, output_path, gpu_memory_fraction=0.3,  margin=44, image_size=182):
+def align_image(args, gpu_memory_fraction=0.3,  margin=44, image_size=182):
+    
     with tf.Graph().as_default():
         gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=gpu_memory_fraction)
         sess = tf.Session(config=tf.ConfigProto(gpu_options=gpu_options, log_device_placement=False))
         with sess.as_default():
-            pnet, rnet, onet = align.detect_face.create_mtcnn(sess, None)
+            pnet, rnet, onet = align_model.create_mtcnn(sess, args.model_dir)
 
 
     minsize = 20 # minimum size of face
@@ -75,7 +71,7 @@ def align_image(image_path, output_path, gpu_memory_fraction=0.3,  margin=44, im
     random_key = np.random.randint(0, high=99999)
 
     try:
-        img = misc.imread(image_path)
+        img = misc.imread(args.input_image)
     except (IOError, ValueError, IndexError) as e:
         errorMessage = '{}: {}'.format(image_path, e)
         print(errorMessage)
@@ -88,26 +84,16 @@ def align_image(image_path, output_path, gpu_memory_fraction=0.3,  margin=44, im
             img = facenet.to_rgb(img)
         img = img[:,:,0:3]
 
-        bounding_boxes, _ = align.detect_face.detect_face(img, minsize, pnet, rnet, onet, threshold, factor)
+        bounding_boxes, _ = detect_face.detect_face(img, minsize, pnet, rnet, onet, threshold, factor)
 
         nrof_faces = bounding_boxes.shape[0]
-        print("========faces:", nrof_faces, bounding_boxes.shape)
-
 
         if nrof_faces>0:
             det = bounding_boxes[:,0:4]
             img_size = np.asarray(img.shape)[0:2]
-            """if nrof_faces>1:
-                bounding_box_size = (det[:,2]-det[:,0])*(det[:,3]-det[:,1])
-                img_center = img_size / 2
-                offsets = np.vstack([ (det[:,0]+det[:,2])/2-img_center[1], (det[:,1]+det[:,3])/2-img_center[0] ])
-                offset_dist_squared = np.sum(np.power(offsets,2.0),0)
-                index = np.argmax(bounding_box_size-offset_dist_squared*2.0) # some extra weight on the centering
 
-                det = det[index,:]
-            """
             dets = det
-            img2 = cv2.imread(image_path )
+            img2 = cv2.imread(args.input_image )
         
             for i in range(dets.shape[0]):
 
@@ -121,7 +107,7 @@ def align_image(image_path, output_path, gpu_memory_fraction=0.3,  margin=44, im
                 cropped = img[bb[1]:bb[3],bb[0]:bb[2],:]
                 scaled = misc.imresize(cropped, (image_size, image_size), interp='bilinear')
 
-                misc.imsave(os.path.join(output_path,str(i)+".jpeg"), scaled)
+                #misc.imsave(os.path.join(output_path,str(i)+".jpeg"), scaled)
                 #text_file.write('%s %d %d %d %d\n' % (output_filename, bb[0], bb[1], bb[2], bb[3]))
 
                 bl = (bb[2], bb[3])
@@ -131,10 +117,21 @@ def align_image(image_path, output_path, gpu_memory_fraction=0.3,  margin=44, im
                 cv2.rectangle(img2, bl, tr, color=color_cv, thickness=2)
                 draw_text(img2, str(bb), bb[0], bb[1])
 
-            cv2.imwrite(os.path.join(output_path,"full.jpeg"), img2)
+            cv2.imwrite(args.output_image, img2)
         else:
             print('Unable to align "%s"' % image_path)
-            text_file.write('%s\n' % (output_filename))
-            
+
+def parse_arguments(argv):
+    parser = argparse.ArgumentParser()
+    
+    parser.add_argument('--model_dir', type=str, default="data/align",
+        help='align model path')
+    parser.add_argument('input_image', type=str,
+        help='Model definition. Points to a module containing the definition of the inference graph.')
+    parser.add_argument('output_image', type=str,
+        help='File containing the model parameters in checkpoint format.')
+    return parser.parse_args(argv)
+
+
 if __name__ == '__main__':
-    align_image(sys.argv[1], sys.argv[2])
+    align_image( parse_arguments(sys.argv[1:]))
