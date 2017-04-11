@@ -31,16 +31,19 @@ from datetime import datetime
 import os.path
 import time
 import sys
-import tensorflow as tf
+
 import numpy as np
 import importlib
 import itertools
 import argparse
-import facenet
-import lfw
-import tensorflow.contrib.slim as slim
 
+import tensorflow as tf
+import tensorflow.contrib.slim as slim
 from tensorflow.python.ops import data_flow_ops
+
+
+import facenet
+from dataset import lfw
 
 def main(args):
   

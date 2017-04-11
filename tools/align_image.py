@@ -30,28 +30,14 @@ import os
 import argparse
 import random
 
-
 import cv2
 import numpy as np
 from scipy import misc
 import tensorflow as tf
+from facenet.utils import image_util
 
 
 from facenet.align import  align_model, detect_face
-
-def read_image(image_path):
-    return misc.imread(image_path)
-
-def to_rgb(img):
-    w, h = img.shape
-    ret = np.empty((w, h, 3), dtype=np.uint8)
-    ret[:, :, 0] = ret[:, :, 1] = ret[:, :, 2] = img
-    return ret
-
-def draw_text(frame, text, x, y, color=(0,255,0), thickness=1, size=1):
-    if x is not None and y is not None:
-        cv2.putText(
-            frame, text, (int(x), int(y)), cv2.FONT_HERSHEY_SIMPLEX, size, color, thickness)
 
 
 def align_image(args, gpu_memory_fraction=0.3,  margin=44, image_size=182):
@@ -107,15 +93,10 @@ def align_image(args, gpu_memory_fraction=0.3,  margin=44, image_size=182):
                 cropped = img[bb[1]:bb[3],bb[0]:bb[2],:]
                 scaled = misc.imresize(cropped, (image_size, image_size), interp='bilinear')
 
-                #misc.imsave(os.path.join(output_path,str(i)+".jpeg"), scaled)
-                #text_file.write('%s %d %d %d %d\n' % (output_filename, bb[0], bb[1], bb[2], bb[3]))
-
                 bl = (bb[2], bb[3])
                 tr = (bb[0], bb[1])
-                color_cv = (255,0,0)
-                #print(bl, tr)
-                cv2.rectangle(img2, bl, tr, color=color_cv, thickness=2)
-                draw_text(img2, str(bb), bb[0], bb[1])
+                
+                image_util.draw_rectangle(img2, bl, tr, color=color_cv, thickness=2)
 
             cv2.imwrite(args.output_image, img2)
         else:
