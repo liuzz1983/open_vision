@@ -35,7 +35,7 @@ import tensorflow as tf
 #from math import floor
 import cv2
 
-def detect_face(img, minsize, pnet, rnet, onet, threshold, factor):
+def detect_face(img, minsize, model, threshold, factor):
     # im: input image
     # minsize: minimum of faces' size
     # pnet, rnet, onet: caffemodel
@@ -65,7 +65,7 @@ def detect_face(img, minsize, pnet, rnet, onet, threshold, factor):
         im_data = (im_data-127.5)*0.0078125
         img_x = np.expand_dims(im_data, 0)
         img_y = np.transpose(img_x, (0,2,1,3))
-        out = pnet(img_y)
+        out = model.pnet(img_y)
         out0 = np.transpose(out[0], (0,2,1,3))
         out1 = np.transpose(out[1], (0,2,1,3))
         
@@ -105,7 +105,7 @@ def detect_face(img, minsize, pnet, rnet, onet, threshold, factor):
                 return np.empty()
         tempimg = (tempimg-127.5)*0.0078125
         tempimg1 = np.transpose(tempimg, (3,1,0,2))
-        out = rnet(tempimg1)
+        out = model.rnet(tempimg1)
         out0 = np.transpose(out[0])
         out1 = np.transpose(out[1])
         score = out1[1,:]
@@ -133,7 +133,7 @@ def detect_face(img, minsize, pnet, rnet, onet, threshold, factor):
                 return np.empty()
         tempimg = (tempimg-127.5)*0.0078125
         tempimg1 = np.transpose(tempimg, (3,1,0,2))
-        out = onet(tempimg1)
+        out = model.onet(tempimg1)
         out0 = np.transpose(out[0])
         out1 = np.transpose(out[1])
         out2 = np.transpose(out[2])
@@ -157,7 +157,7 @@ def detect_face(img, minsize, pnet, rnet, onet, threshold, factor):
     return total_boxes, points
 
 
-def bulk_detect_face(images, detection_window_size_ratio, pnet, rnet, onet, threshold, factor):
+def bulk_detect_face(images, detection_window_size_ratio, model, threshold, factor):
     # im: input image
     # minsize: minimum of faces' size
     # pnet, rnet, onet: caffemodel
@@ -213,7 +213,7 @@ def bulk_detect_face(images, detection_window_size_ratio, pnet, rnet, onet, thre
 
     for resolution in images_obj_per_resolution:
         images_per_resolution = [i['image'] for i in images_obj_per_resolution[resolution]]
-        outs = pnet(images_per_resolution)
+        outs = model.pnet(images_per_resolution)
 
         for index in range(len(outs[0])):
             scale = images_obj_per_resolution[resolution][index]['scale']
@@ -273,7 +273,7 @@ def bulk_detect_face(images, detection_window_size_ratio, pnet, rnet, onet, thre
         if 'rnet_input' in image_obj:
             bulk_rnet_input = np.append(bulk_rnet_input, image_obj['rnet_input'], axis=0)
 
-    out = rnet(bulk_rnet_input)
+    out = model.rnet(bulk_rnet_input)
     out0 = np.transpose(out[0])
     out1 = np.transpose(out[1])
     score = out1[1, :]
@@ -329,7 +329,7 @@ def bulk_detect_face(images, detection_window_size_ratio, pnet, rnet, onet, thre
         if 'onet_input' in image_obj:
             bulk_onet_input = np.append(bulk_onet_input, image_obj['onet_input'], axis=0)
 
-    out = onet(bulk_onet_input)
+    out = model.onet(bulk_onet_input)
 
     out0 = np.transpose(out[0])
     out1 = np.transpose(out[1])
