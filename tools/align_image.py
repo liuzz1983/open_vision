@@ -34,11 +34,11 @@ import cv2
 import numpy as np
 from scipy import misc
 import tensorflow as tf
-from facenet.utils import cv_util
-from facenet.utils import image_utils
+from openvision.utils import cv_util
+from openvision.utils import image_utils
 
 
-from facenet.align import  align_model, detect_face
+from openvision.facenet.align import  align_model, detect_face
 
 def align_image(args, gpu_memory_fraction=0.3,  margin=44, image_size=182):
     
