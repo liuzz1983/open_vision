@@ -18,6 +18,8 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 import os
+import re
+
 from pprint import pprint
 
 import tensorflow as tf
@@ -25,8 +27,6 @@ from tensorflow.contrib.slim.python.slim.data import parallel_reader
 
 slim = tf.contrib.slim
 
-
-import os
 
 def get_model_filenames(model_dir):
     files = os.listdir(model_dir)
@@ -49,6 +49,18 @@ def get_model_filenames(model_dir):
     return meta_file, ckpt_file
 
 
+def load_model(sess,model_dir):
+    
+    meta_file, ckpt_file = get_model_filenames(model_dir)
+    model_dir_exp = os.path.expanduser(model_dir)
+    saver = tf.train.import_meta_graph(os.path.join(model_dir_exp, meta_file))
+    saver.restore(sess, os.path.join(model_dir_exp, ckpt_file))
+
+def list_variables(filename):
+    reader = training.NewCheckpointReader(filename)
+    variable_map = reader.get_variable_to_shape_map()
+    names = sorted(variable_map.keys())
+    return names
 
 # =========================================================================== #
 # General tools.
