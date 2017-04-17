@@ -45,14 +45,14 @@ def extrace_image(model, input_name, image_size=160):
 	img = image_utils.read_rgb(input_name)
 	rectangles = facenet_align.align_image(model, img, minsize=20)
 	faces = facenet_align.extrace_face(img,rectangles, image_size)
-	return faces
+	return faces,rectangles
 
 def run_recog(align_model, facenet_model, input_image, output_dir):
 
 	prefix_index = input_image.rfind(".")
 	prefix = input_image[ : prefix_index]
 
-	faces = extrace_image(align_model, input_image)
+	faces,rectangles = extrace_image(align_model, input_image)
 	embeding = facenet_model.run(faces)
 
 	image_dir = os.path.join(output_dir,prefix)
@@ -64,6 +64,11 @@ def run_recog(align_model, facenet_model, input_image, output_dir):
 	for i, image in enumerate(faces):
 		image_file = os.path.join(image_dir, str(i)+".jpg")
 		misc.imsave(image_file, image)
+
+	image_file = os.path.join(output_dir, prefix+".jpg")
+
+	if rectangles:
+		facenet_align.draw_rectangles_on_image(input_image, image_file, rectangles)
 
 	return embeding, faces
 

@@ -29,17 +29,22 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import tensorflow as tf
-import numpy as np
-import argparse
-import facenet
-import lfw
 import os
 import sys
 import math
+import argparse
+
+import tensorflow as tf
+import numpy as np
+
 from sklearn import metrics
 from scipy.optimize import brentq
 from scipy import interpolate
+
+from openvision.datasets import lfw
+from openvision.utils import tf_util
+from openvision.facenet import evaluate
+from openvision.facenet import facenet
 
 def main(args):
   
@@ -48,18 +53,18 @@ def main(args):
         with tf.Session() as sess:
             
             # Read the file containing the pairs used for testing
-            pairs = lfw.read_pairs(os.path.expanduser(args.lfw_pairs))
+            #pairs = lfw.read_pairs(os.path.expanduser(args.lfw_pairs))
+
+            pairs = lfw.gen_pairs(args.lfw_dir, pair_num=args.lfw_pair_num)
+            print(pairs)
 
             # Get the paths for the corresponding images
             paths, actual_issame = lfw.get_paths(os.path.expanduser(args.lfw_dir), pairs, args.lfw_file_ext)
 
             # Load the model
             print('Model directory: %s' % args.model_dir)
-            meta_file, ckpt_file = facenet.get_model_filenames(os.path.expanduser(args.model_dir))
             
-            print('Metagraph file: %s' % meta_file)
-            print('Checkpoint file: %s' % ckpt_file)
-            facenet.load_model(args.model_dir, meta_file, ckpt_file)
+            tf_util.load_model(sess, args.model_dir)
             
             # Get input and output tensors
             images_placeholder = tf.get_default_graph().get_tensor_by_name("input:0")
@@ -82,8 +87,9 @@ def main(args):
                 images = facenet.load_data(paths_batch, False, False, image_size)
                 feed_dict = { images_placeholder:images, phase_train_placeholder:False }
                 emb_array[start_index:end_index,:] = sess.run(embeddings, feed_dict=feed_dict)
-        
-            tpr, fpr, accuracy, val, val_std, far = lfw.evaluate(emb_array, 
+            
+            print("begin to evaluate:", len(emb_array), " is_same:", len(actual_issame))
+            tpr, fpr, accuracy, val, val_std, far = evaluate.evaluate(emb_array, 
                 actual_issame, nrof_folds=args.lfw_nrof_folds)
 
             print('Accuracy: %1.3f+-%1.3f' % (np.mean(accuracy), np.std(accuracy)))
@@ -103,13 +109,19 @@ def parse_arguments(argv):
         help='Number of images to process in a batch in the LFW test set.', default=100)
     parser.add_argument('model_dir', type=str, 
         help='Directory containing the metagraph (.meta) file and the checkpoint (ckpt) file containing model parameters')
-    parser.add_argument('--lfw_pairs', type=str,
+    parser.add_argument('--lfw_pair', type=str,
         help='The file containing the pairs to use for validation.', default='data/pairs.txt')
+
+    parser.add_argument('--lfw_pair_num', type=int,
+        help='The file containing the pairs to use for validation.', default=200)
+
     parser.add_argument('--lfw_file_ext', type=str,
-        help='The file extension for the LFW dataset.', default='png', choices=['jpg', 'png'])
+        help='The file extension for the LFW dataset.', default='jpg', choices=['jpg', 'png'])
     parser.add_argument('--lfw_nrof_folds', type=int,
         help='Number of folds to use for cross validation. Mainly used for testing.', default=10)
     return parser.parse_args(argv)
 
 if __name__ == '__main__':
-    main(parse_arguments(sys.argv[1:]))
+
+    args = parse_arguments(sys.argv[1:])
+    main(args)

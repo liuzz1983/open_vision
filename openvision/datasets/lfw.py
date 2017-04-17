@@ -44,6 +44,7 @@ def get_paths(lfw_dir, pairs, file_ext):
             path0 = os.path.join(lfw_dir, pair[0], pair[0] + '_' + '%04d' % int(pair[1])+'.'+file_ext)
             path1 = os.path.join(lfw_dir, pair[2], pair[2] + '_' + '%04d' % int(pair[3])+'.'+file_ext)
             issame = False
+        print(path0, path1)
         if os.path.exists(path0) and os.path.exists(path1):    # Only add the pair if both paths exist
             path_list += (path0,path1)
             issame_list.append(issame)
@@ -58,9 +59,58 @@ def read_pairs(pairs_filename):
     pairs = []
     with open(pairs_filename, 'r') as f:
         for line in f.readlines()[1:]:
-            pair = line.strip().split()
+            pair = line.strip().split("\t")
             pairs.append(pair)
     return np.array(pairs)
 
+class Person(object):
+    def __init__(self, name, images):
+        self.name = name
+        self.images = images
+
+    def len(self):
+        return len(self.images)
+
+def gen_pairs(lfw_dir, pair_num=20):
+
+    persons = os.listdir(lfw_dir)
+
+    full_persion = []
+    for person_name in persons:
+        path_name = os.path.join(lfw_dir, person_name)
+        if not os.path.isdir(path_name):
+            continue
+
+        images = []
+        for name in os.listdir(path_name):
+            file_name = os.path.join(path_name, name)
+            images.append(name)
+
+        p = Person(person_name, images)
+
+        full_persion.append(p)
+
+
+    pairs = []
+    persion_num = len(full_persion)
+    sample_persons = set(np.random.randint(persion_num, size=pair_num))
+    for i, p_index in enumerate(sample_persons):
+        p = full_persion[p_index]
+
+        if i%2 == 0:
+            other_index = np.random.randint(persion_num)
+            if other_index == p_index:
+                continue
+            o_p = full_persion[other_index]
+
+            pair =[ p.name, 1, o_p.name, 1]
+            pairs.append(pair)
+
+        else:
+            if len(p.images) > 1:
+                pair =[ p.name, 1, 2]
+                pairs.append(pair)
+
+    return pairs
 
 
