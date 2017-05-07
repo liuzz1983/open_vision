@@ -4,12 +4,19 @@ from __future__ import print_function
 
 import os
 import sys
+
+import sys
+fileDir = os.path.dirname(os.path.realpath(__file__))
+sys.path.append(os.path.join(fileDir, ".."))
+
 import argparse
 from distutils.dir_util import mkpath
 
 import numpy as np
 from scipy import misc
 import tensorflow as tf
+
+import openvision
 
 from openvision.utils import tf_util
 from openvision.utils import image_utils

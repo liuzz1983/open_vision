@@ -30,7 +30,7 @@ def build_model(model_dir,gpu_memory_fraction=0.3):
 # Add a random key to the filename to allow alignment using multiple processes
 #random_key = np.random.randint(0, high=99999)
 
-def align_image(model, img, margin=44, image_size=182, minsize =20,
+def align_image(model, img, margin=4, image_size=182, minsize =12,
             threshold = [ 0.6, 0.7, 0.8 ], factor = 0.709 ):
     
      # three steps's threshold

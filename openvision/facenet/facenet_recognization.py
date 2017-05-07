@@ -38,31 +38,25 @@ import math
 import re
 from scipy import misc
 
-
-def load_data(image_paths, do_random_crop, do_random_flip, image_size, do_prewhiten=True):
-    nrof_samples = len(image_paths)
-    images = np.zeros((nrof_samples, image_size, image_size, 3))
-    for i in range(nrof_samples):
-        img = misc.imread(image_paths[i])
-        if img.ndim == 2:
-            img = to_rgb(img)
-        if do_prewhiten:
-            img = prewhiten(img)
-        img = crop(img, do_random_crop, image_size)
-        img = flip(img, do_random_flip)
-        images[i,:,:,:] = img
-    return images
+from openvision.utils import tf_util
 
 
 class FacenetRecongizer(object):
 
-    def __init__(self,session = tf.Session()):
+    def __init__(self,session):
         self.session = session
         self.graph = self.session.graph
 
         self.images_placeholder =self.graph.get_tensor_by_name("input:0")
         self.embeddings = self.graph.get_tensor_by_name("embeddings:0")
         self.phase_train_placeholder = self.graph.get_tensor_by_name("phase_train:0")
+
+    @classmethod
+    def load(cls, model_file):
+        sess = tf.Session()
+        tf_util.load_model(sess, model_file)
+        return FacenetRecongizer(sess)
+        
 
     def run(self, images):
         feed_dict = { self.images_placeholder:images, self.phase_train_placeholder:False }
